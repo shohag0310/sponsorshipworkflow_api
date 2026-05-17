@@ -34,7 +34,7 @@ cd sponsorshipworkflow_api/SponsorshipWorkflow.API
 
 3. Apply migration:
 ```bash
-dotnet ef database update -p SponsorshipWorkflow.Infrastructure -s SponsorshipWorkflow.API
+dotnet ef database update --project ../SponsorshipWorkflow.Infrastructure --startup-project .
 ```
 
 4. Run:
@@ -47,34 +47,11 @@ dotnet run
 - API: `https://localhost:7206/api`
 - Swagger: `https://localhost:7206/swagger`
 
-## Solution Architecture
-- `SponsorshipWorkflow.API`: controllers, auth/cors/swagger setup
-- `SponsorshipWorkflow.Application`: DTOs + interfaces
-- `SponsorshipWorkflow.Domain`: entities + enums
-- `SponsorshipWorkflow.Infrastructure`: EF Core, services, workflow logic, seeders
-
-## Core Entities
-- `Users`
-- `SponsorshipRequests`
-- `SponsorshipTypes`
-- `ApprovalHistories`
-
-## Workflow Logic
-- `Draft -> PendingManagerApproval -> PendingFinanceReview -> Approved`
-- Manager reject -> `Rejected`
-- Finance reject -> `Rejected`
-- Requestor cancel -> `Cancelled`
-
-## RBAC Roles
-- `Requestor`
-- `Manager`
-- `FinanceAdmin`
-- `SystemAdmin`
-
 ## Core Endpoints
 - `POST /api/auth/login`
 - `GET /api/requests`
 - `GET /api/requests/dashboard-stats`
+- `GET /api/requests/{id}`
 - `POST /api/requests`
 - `PUT /api/requests/{id}`
 - `POST /api/requests/{id}/submit`
@@ -86,6 +63,51 @@ dotnet run
 - `GET /api/requests/{id}/history`
 - `GET /api/requests/all-history`
 - `GET/POST/PUT/DELETE /api/sponsorshipTypes`
+
+## Architecture Explanation (Backend Focus)
+
+### Backend Architecture
+- Layered architecture with clear boundaries:
+  - `API`: HTTP transport, middleware, auth pipeline, swagger
+  - `Application`: DTOs and service interfaces
+  - `Domain`: entities and enums (core business model)
+  - `Infrastructure`: EF Core DbContext, concrete services, seeders
+- Business logic is implemented in service layer, not controllers.
+
+### Frontend Structure (Context)
+- Frontend is feature-based and consumes API through a centralized axios client.
+- Role-based routes and menu behavior mirror backend authorization model.
+
+### Workflow Logic
+- Status flow:
+  - `Draft -> PendingManagerApproval -> PendingFinanceReview -> Approved`
+- Manager/finance rejection sets status `Rejected`.
+- Requestor cancellation moves to `Cancelled` from allowed states.
+- Approval transitions are persisted into `ApprovalHistories` for auditability.
+
+### RBAC Logic
+- Role claims included in JWT (`Requestor`, `Manager`, `FinanceAdmin`, `SystemAdmin`).
+- Endpoint access enforced with `[Authorize]` and `[Authorize(Roles = ...)]`.
+- Role-aware filtering applied in request retrieval and dashboard stats.
+
+### Database Design
+- `Users`: identity and role
+- `SponsorshipRequests`: core request data + workflow status
+- `SponsorshipTypes`: controlled request categorization
+- `ApprovalHistories`: immutable status transition log
+- Main relationships:
+  - one user to many requests
+  - one request to many history entries
+  - one sponsorship type to many requests
+
+### Assumptions and Tradeoffs
+- Single sequential approval chain chosen for clarity and assessment scope.
+- Seeded users/types support predictable reviewer testing.
+- Simplified non-functional scope:
+  - no advanced observability
+  - no asynchronous notification pipeline
+  - no multi-tenant data partitioning
+  - no file storage pipeline
 
 ## Seeded Test Accounts
 - `requestor@test.com` / `Password123!`
