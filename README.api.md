@@ -34,9 +34,8 @@ cd sponsorshipworkflow_api/SponsorshipWorkflow.API
 
 3. Apply migration:
 ```bash
-dotnet ef database update --project ../SponsorshipWorkflow.Infrastructure --startup-project .
+dotnet ef database update -p SponsorshipWorkflow.Infrastructure -s SponsorshipWorkflow.API
 ```
-
 4. Run:
 ```bash
 dotnet restore
