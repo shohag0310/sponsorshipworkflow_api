@@ -1,0 +1,6 @@
+services:
+  sponsorshipworkflow.api:
+    image: ${DOCKER_REGISTRY-}sponsorshipworkflowapi
+    build:
+      context: .
+      dockerfile: SponsorshipWorkflow.API/Dockerfile
