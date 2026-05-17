@@ -36,6 +36,13 @@ public class RequestsController : ControllerBase
         return Ok(BaseResponse<List<SponsorshipRequest>>.SuccessResult(requests));
     }
 
+    [HttpGet("dashboard-stats")]
+    public async Task<ActionResult<BaseResponse<DashboardStatsDto>>> GetDashboardStats()
+    {
+        var stats = await _requestService.GetDashboardStatsAsync(_currentUserService.UserId, _currentUserService.Role);
+        return Ok(BaseResponse<DashboardStatsDto>.SuccessResult(stats));
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<BaseResponse<SponsorshipRequest>>> GetById(Guid id)
     {

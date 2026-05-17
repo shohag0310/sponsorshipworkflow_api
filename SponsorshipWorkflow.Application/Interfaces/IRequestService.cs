@@ -7,6 +7,7 @@ public interface IRequestService
 {
     Task<SponsorshipRequest> CreateAsync(CreateRequestDto dto, Guid requestorId);
     Task<List<SponsorshipRequest>> GetAllAsync(Guid currentUserId, string role);
+    Task<DashboardStatsDto> GetDashboardStatsAsync(Guid currentUserId, string role);
     Task<SponsorshipRequest?> GetByIdAsync(Guid id);
     Task<SponsorshipRequest> UpdateAsync(Guid id, UpdateRequestDto dto, Guid requestorId);
     Task<List<ApprovalHistory>> GetHistoryAsync(Guid requestId);

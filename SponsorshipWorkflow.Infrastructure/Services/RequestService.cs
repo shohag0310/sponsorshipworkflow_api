@@ -59,6 +59,62 @@ public class RequestService : IRequestService
         return await query.OrderByDescending(x => x.CreatedAt).ToListAsync();
     }
 
+    public async Task<DashboardStatsDto> GetDashboardStatsAsync(Guid currentUserId, string role)
+    {
+        Enum.TryParse<UserRole>(role, out var userRole);
+
+        IQueryable<SponsorshipRequest> query = _context.SponsorshipRequests;
+
+        if (userRole == UserRole.Requestor)
+        {
+            query = query.Where(x => x.RequestorId == currentUserId);
+        }
+
+        var counts = await query
+            .GroupBy(x => x.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.Status, g => g.Count);
+
+        int totalRequests = counts.Values.Sum();
+        int pendingManagerCount = counts.GetValueOrDefault(RequestStatus.PendingManagerApproval);
+        int pendingFinanceCount = counts.GetValueOrDefault(RequestStatus.PendingFinanceReview);
+        int approvedCount = counts.GetValueOrDefault(RequestStatus.Approved);
+        int rejectedCount = counts.GetValueOrDefault(RequestStatus.Rejected);
+
+        return userRole switch
+        {
+            UserRole.Requestor => new DashboardStatsDto
+            {
+                TotalRequests = totalRequests,
+                Pending = pendingManagerCount + pendingFinanceCount,
+                Approved = approvedCount,
+                Rejected = rejectedCount
+            },
+            UserRole.Manager => new DashboardStatsDto
+            {
+                TotalRequests = totalRequests,
+                Pending = pendingManagerCount,
+                Approved = pendingFinanceCount + approvedCount,
+                Rejected = rejectedCount
+            },
+            UserRole.FinanceAdmin => new DashboardStatsDto
+            {
+                TotalRequests = totalRequests,
+                Pending = pendingFinanceCount,
+                Approved = approvedCount,
+                Rejected = rejectedCount
+            },
+            _ => new DashboardStatsDto
+            {
+                TotalRequests = totalRequests,
+                Pending = pendingManagerCount + pendingFinanceCount,
+                Approved = approvedCount,
+                Rejected = rejectedCount
+            }
+        };
+    }
+
+
     public async Task<SponsorshipRequest?> GetByIdAsync(Guid id)
     {
         return await _context.SponsorshipRequests
